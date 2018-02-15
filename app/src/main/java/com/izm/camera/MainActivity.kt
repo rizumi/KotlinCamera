@@ -16,6 +16,14 @@ import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.util.Size
 import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CaptureRequest
+import android.graphics.Bitmap
+import android.os.Environment
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private var mBackGroundHander : Handler? = null
     private var mPreviewRequestBuilder: CaptureRequest.Builder? = null
     private var mPreviewRequest: CaptureRequest? = null
+    private var mCameraCaptureSession : CameraCaptureSession? = null
     private var mCameraSize : Size? = null
 
     private val mStateCallback = object : CameraDevice.StateCallback() {
@@ -44,6 +53,26 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        capture_button.setOnClickListener({
+            try {
+                mCameraCaptureSession!!.stopRepeating()
+                if (textureView.isAvailable) {
+                    val root = Environment.getExternalStorageDirectory()
+                    val file = File(root,"test.jpg")
+                    val fos = FileOutputStream(file)
+                    val bitmap = textureView.bitmap
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, fos)
+                    fos.close()
+                }
+            } catch (e: CameraAccessException) {
+                e.printStackTrace()
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        })
     }
 
     override fun onResume() {
@@ -120,14 +149,13 @@ class MainActivity : AppCompatActivity() {
                         return
                     }
 
-                    // TODO CaptureSessionの取得
+                    mCameraCaptureSession = session
 
                     try {
                         session.setRepeatingRequest(mPreviewRequest, null, null)
                     } catch (e: CameraAccessException) {
                         e.printStackTrace()
                     }
-
                 }
 
                 override fun onConfigureFailed(session: CameraCaptureSession) {
@@ -136,6 +164,5 @@ class MainActivity : AppCompatActivity() {
         } catch (e: CameraAccessException) {
             e.printStackTrace()
         }
-
     }
 }
